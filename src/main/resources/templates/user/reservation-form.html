@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User</title>
+</head>
+<body>
+
+<h3>Make a reservation</h3>
+
+<form method="post" action="#" th:action="@{/user/reservation}" th:object="${reservation}">
+    <select th:field=*{course.id}>
+        <option th:each="c : ${courses}" th:value="${c.id}" th:text="${c.name}"></option>
+    </select>
+    <br><br>
+    Start time: <input type="datetime-local" th:field="*{startTime}"><br><br>
+    Number of people: <input type="text" th:field="*{numOfPeople}" value="1"><br><br>
+    Note: <input type="text" th:field="*{note}" value="blah..."><br><br>
+    <input type="submit" value="Submit">
+</form>
+
+</body>
+</html>

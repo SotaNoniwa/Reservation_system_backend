@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin</title>
+</head>
+<body>
+
+<h3>Add available time slot</h3>
+
+<form method="post" action="#" th:action="@{/admin/available-time-slot}" th:object="${slot}">
+    Start time: <input type="datetime-local" th:field="*{startTime}">
+    <br>
+    End time: <input type="datetime-local" th:field="*{endTime}">
+    <input type="submit" value="Submit">
+</form>
+
+</body>
+</html>
