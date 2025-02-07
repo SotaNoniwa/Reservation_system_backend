@@ -49,7 +49,6 @@ public class UserController {
         LocalDateTime endTime = reservation.getStartTime().plusMinutes(durationMinutes);
         reservation.setEndTime(endTime);
 
-        // TODO: Find table where numOfPeople <= capacity && not yet reserved
         List<RestaurantTable> tables = reservationSystemService.findTablesByCapacity(reservation.getNumOfPeople());
         if (tables == null) {
             System.out.println("There is no table for " + reservation.getNumOfPeople() + " people");
@@ -109,10 +108,12 @@ public class UserController {
                 && (endTime.isEqual(endRange) || endTime.isBefore(endRange));
     }
 
-    // Check if there is still enough time before reservation start time to reserve a table again
-    // E.g. a customer reserve a table 11:00 to 13:00, availableTimeSlot is 10:00-20:00,
-    // then availableTimeSlot should be updated to 13:00-20:00.
-    // The table has 10:00-11:00 free slot but reservation duration is 120 min, so there is not enough time before reservation start time.
+    /**
+     * Check if there is still enough time before reservation start time to reserve a table again
+     * E.g. a customer reserve a table 11:00 to 13:00, availableTimeSlot is 10:00-20:00,
+     * then availableTimeSlot should be updated to 13:00-20:00.
+     * The table has 10:00-11:00 free slot but reservation duration is 120 min, so there is not enough time before reservation start time.
+     **/
     private boolean isTimeSlotBeforeReservationStartTimeTooShort(Reservation reservation, AvailableTimeSlot slot, long durationMinutes) {
 //        System.out.println("reservation start time - 120 min: " + reservation.getStartTime().minusMinutes(durationMinutes));
 //        System.out.println("slot start time: " + slot.getStartTime());

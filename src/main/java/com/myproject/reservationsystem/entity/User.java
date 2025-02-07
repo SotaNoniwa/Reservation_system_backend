@@ -3,10 +3,11 @@ package com.myproject.reservationsystem.entity;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(name = "`user`")
 public class User {
 
     @Id
@@ -29,8 +30,14 @@ public class User {
     @Column(name = "enabled")
     private boolean enabled;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "id", cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
     private List<Reservation> reservations;
+
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinTable(name = "users_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Collection<Role> roles;
 
     public User() {
     }
@@ -41,6 +48,15 @@ public class User {
         this.phone = phone;
         this.password = password;
         this.enabled = enabled;
+    }
+
+    public User(String username, String email, String phone, String password, boolean enabled, Collection<Role> roles) {
+        this.username = username;
+        this.email = email;
+        this.phone = phone;
+        this.password = password;
+        this.enabled = enabled;
+        this.roles = roles;
     }
 
     public int getId() {
@@ -91,7 +107,23 @@ public class User {
         this.enabled = enabled;
     }
 
-    public void add(Reservation reservation) {
+    public Collection<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Collection<Role> roles) {
+        this.roles = roles;
+    }
+
+    public List<Reservation> getReservations() {
+        return reservations;
+    }
+
+    public void setReservations(List<Reservation> reservations) {
+        this.reservations = reservations;
+    }
+
+    public void addReservation(Reservation reservation) {
         if (reservations.isEmpty()) {
             reservations = new ArrayList<>();
         }
@@ -105,14 +137,20 @@ public class User {
             reservationIdList.add(reservation.getId());
         }
 
+        List<Integer> roleIdList = new ArrayList<>();
+        for (Role role : roles) {
+            roleIdList.add(role.getId());
+        }
+
         return "User{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", phone='" + phone + '\'' +
                 ", password='" + password + '\'' +
-                ", enabled=" + enabled +
-                ", reservationIds=" + reservationIdList +
+                ", enabled=" + enabled + '\'' +
+                ", reservationIds=" + reservationIdList + '\'' +
+                ", roleIds=" + roleIdList + '\'' +
                 '}';
     }
 }
