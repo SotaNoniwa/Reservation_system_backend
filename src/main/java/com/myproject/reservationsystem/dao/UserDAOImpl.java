@@ -17,6 +17,20 @@ public class UserDAOImpl implements UserDAO {
     }
 
     @Override
+    public User findUserById(int id) {
+//        User user = null;
+//        try {
+//            user = entityManager.find(User.class, id);
+//        } catch (Exception e) {
+//            user = null;
+//        }
+//
+//        return user;
+
+        return entityManager.find(User.class, id);
+    }
+
+    @Override
     public User findUserByUserName(String username) {
         TypedQuery<User> query = entityManager
                 .createQuery("from User where username=:username and enabled=true", User.class)

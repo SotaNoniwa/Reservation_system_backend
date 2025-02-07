@@ -4,6 +4,7 @@ import com.myproject.reservationsystem.dao.RoleDAO;
 import com.myproject.reservationsystem.dao.UserDAO;
 import com.myproject.reservationsystem.entity.Role;
 import com.myproject.reservationsystem.entity.User;
+import com.myproject.reservationsystem.security.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -28,6 +29,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User findUserById(int id) {
+        return userDAO.findUserById(id);
+    }
+
+    @Override
     public User findUserByUserName(String userName) {
         return userDAO.findUserByUserName(userName);
     }
@@ -36,10 +42,11 @@ public class UserServiceImpl implements UserService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userDAO.findUserByUserName(username);
         if (user == null) {
-            throw new UsernameNotFoundException("Invalid username or password.");
+            throw new UsernameNotFoundException("User not found: " + username);
         }
-        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(),
-                mapRolesToAuthorities(user.getRoles()));
+//        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(),
+//                mapRolesToAuthorities(user.getRoles()));
+        return new CustomUserDetails(user);
     }
 
     private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Collection<Role> roles) {

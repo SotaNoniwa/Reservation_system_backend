@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,7 +9,9 @@
 
 <h3>User Panel</h3>
 
-<p>Hello username!</p>
+<p>Hello <span sec:authentication="principal.username"></span>!</p>
+
+<p sec:authentication="principal.id"></p>
 
 <a th:href="@{/user/reservation}">Make a reservation</a>
 

@@ -1,8 +1,12 @@
 package com.myproject.reservationsystem.controller;
 
 import com.myproject.reservationsystem.entity.*;
+import com.myproject.reservationsystem.security.CustomUserDetails;
 import com.myproject.reservationsystem.service.ReservationSystemService;
+import com.myproject.reservationsystem.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +22,12 @@ public class UserController {
 
     private ReservationSystemService reservationSystemService;
 
+    private UserService userService;
+
     @Autowired
-    public UserController(ReservationSystemService reservationSystemService) {
+    public UserController(ReservationSystemService reservationSystemService, UserService userService) {
         this.reservationSystemService = reservationSystemService;
+        this.userService = userService;
     }
 
     @GetMapping
@@ -35,7 +42,6 @@ public class UserController {
         model.addAttribute("reservation", reservation);
 
         // TODO: Maybe I need to create User object here?
-        // find all courses & add it to model
         List<Course> courses = reservationSystemService.findAllCourses();
         model.addAttribute("courses", courses);
 
@@ -56,6 +62,7 @@ public class UserController {
             return "test";
         }
 
+        outerLoop:
         for (RestaurantTable table : tables) {
             List<AvailableTimeSlot> availableTimeSlots = table.getAvailableTimeSlots();
             if (!availableTimeSlots.isEmpty()) {
@@ -83,15 +90,22 @@ public class UserController {
                         } else {
                             reservationSystemService.deleteAvailableTimeSlot(slot.getId());
                         }
+                        break outerLoop;
                     }
                 }
             }
         }
 
-        // TODO: set a real user
-        int userId = 1;
-        User testUser = reservationSystemService.findUserById(userId);
-        reservation.setUser(testUser);
+        // Retrieve currently logging user info
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth.getPrincipal() instanceof CustomUserDetails) {
+            CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+            int userId = userDetails.getId();
+            User user = userService.findUserById(userId);
+            reservation.setUser(user);
+        } else {
+            throw new RuntimeException("User not authenticated properly.");
+        }
 
         // Associate corresponding course
         int courseId = reservation.getCourse().getId();
@@ -115,14 +129,10 @@ public class UserController {
      * The table has 10:00-11:00 free slot but reservation duration is 120 min, so there is not enough time before reservation start time.
      **/
     private boolean isTimeSlotBeforeReservationStartTimeTooShort(Reservation reservation, AvailableTimeSlot slot, long durationMinutes) {
-//        System.out.println("reservation start time - 120 min: " + reservation.getStartTime().minusMinutes(durationMinutes));
-//        System.out.println("slot start time: " + slot.getStartTime());
         return reservation.getStartTime().minusMinutes(durationMinutes).isBefore(slot.getStartTime());
     }
 
     private boolean isTimeSlotAfterReservationStartTimeTooShort(Reservation reservation, AvailableTimeSlot slot, long durationMinutes) {
-//        System.out.println("reservation end time + 120 min: " + reservation.getEndTime().plusMinutes(durationMinutes));
-//        System.out.println("reservation end time: " + slot.getEndTime());
         return reservation.getEndTime().plusMinutes(durationMinutes).isAfter(slot.getEndTime());
     }
 }

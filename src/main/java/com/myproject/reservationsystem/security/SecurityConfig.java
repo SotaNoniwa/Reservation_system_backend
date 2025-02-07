@@ -38,9 +38,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/user").hasRole("USER")
                 .requestMatchers(HttpMethod.GET, "/user").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/user/**").hasRole("USER")
+                .requestMatchers(HttpMethod.POST, "/user/**").hasRole("USER")
                 .requestMatchers(HttpMethod.GET, "/user/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/user/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/admin").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/admin/**").hasRole("ADMIN"));
+                .requestMatchers(HttpMethod.GET, "/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/admin/**").hasRole("ADMIN"));
 
         http.httpBasic(Customizer.withDefaults());
         http.csrf(csrf -> csrf.disable());
