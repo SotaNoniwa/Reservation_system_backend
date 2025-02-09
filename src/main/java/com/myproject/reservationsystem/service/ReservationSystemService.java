@@ -19,6 +19,8 @@ public interface ReservationSystemService {
 
     List<RestaurantTable> findTablesByCapacity(int capacity);
 
+    int getMaxCapacityOfTable();
+
     User findUserById(int id);
 
     void saveReservation(Reservation reservation);

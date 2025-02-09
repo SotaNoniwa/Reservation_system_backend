@@ -20,6 +20,8 @@ public interface ReservationSystemDAO {
 
     RestaurantTable findTableByCapacity(int capacity);
 
+    int getMaxCapacityOfTable();
+
     List<RestaurantTable> findTablesByCapacity(int capacity);
 
     User findUserById(int id);

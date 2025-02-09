@@ -15,8 +15,8 @@ public class RestaurantTable {
     @Column(name = "id")
     private int id;
 
-    @Column(name = "table_number")
-    private int tableNumber;
+    @Column(name = "`name`")
+    private String name;
 
     @Column(name = "capacity")
     private int capacity;
@@ -24,16 +24,30 @@ public class RestaurantTable {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "table", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AvailableTimeSlot> availableTimeSlots;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "table",
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "tables",
             cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     private List<Reservation> reservations;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "adjacent_table",
+            joinColumns = @JoinColumn(name = "table_id"),
+            inverseJoinColumns = @JoinColumn(name = "adjacent_table_id")
+    )
+    private List<RestaurantTable> adjacentTables;
 
     public RestaurantTable() {
     }
 
-    public RestaurantTable(int tableNumber, int capacity) {
-        this.tableNumber = tableNumber;
+    public RestaurantTable(int capacity, String name) {
         this.capacity = capacity;
+        this.name = name;
+    }
+
+    public RestaurantTable(String name, int capacity, List<RestaurantTable> adjacentTables) {
+        this.name = name;
+        this.capacity = capacity;
+        this.adjacentTables = adjacentTables;
     }
 
     public int getId() {
@@ -44,20 +58,20 @@ public class RestaurantTable {
         this.id = id;
     }
 
-    public int getTableNumber() {
-        return tableNumber;
-    }
-
-    public void setTableNumber(int tableNumber) {
-        this.tableNumber = tableNumber;
-    }
-
     public int getCapacity() {
         return capacity;
     }
 
     public void setCapacity(int capacity) {
         this.capacity = capacity;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public List<AvailableTimeSlot> getAvailableTimeSlots() {
@@ -86,12 +100,35 @@ public class RestaurantTable {
             reservations = new ArrayList<>();
         }
         reservations.add(reservation);
-        reservation.setTable(this);
+
+        reservation.getTables().add(this);
     }
 
     public void removeReservation(Reservation reservation) {
         reservations.remove(reservation);
-        reservation.setTable(this);
+
+        reservation.getTables().remove(this);
+    }
+
+    public List<RestaurantTable> getAdjacentTables() {
+        return adjacentTables;
+    }
+
+    public void setAdjacentTables(List<RestaurantTable> adjacentTables) {
+        this.adjacentTables = adjacentTables;
+    }
+
+    public void addAdjacentTable(RestaurantTable table) {
+        if (adjacentTables == null) {
+            adjacentTables = new ArrayList<>();
+        }
+        adjacentTables.add(table);
+        table.getAdjacentTables().add(this);
+    }
+
+    public void removeAdjacentTable(RestaurantTable table) {
+        adjacentTables.remove(table);
+        table.getAdjacentTables().remove(table);
     }
 
     @Override
@@ -106,12 +143,18 @@ public class RestaurantTable {
             availableTimeSlotIdList.add(slot.getId());
         }
 
+        List<Integer> adjacentTableIdList = new ArrayList<>();
+        for (RestaurantTable table : adjacentTables) {
+            adjacentTableIdList.add(table.getId());
+        }
+
         return "RestaurantTable{" +
                 "id=" + id +
-                ", tableNumber=" + tableNumber +
+                ", location=" + name +
                 ", capacity=" + capacity +
                 ", availableTimeSlotIds=" + availableTimeSlotIdList +
                 ", reservationIds=" + reservationIdList +
+                ", adjacentTableIds=" + adjacentTableIdList +
                 '}';
     }
 }

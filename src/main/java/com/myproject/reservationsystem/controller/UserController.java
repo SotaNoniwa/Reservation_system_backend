@@ -4,6 +4,7 @@ import com.myproject.reservationsystem.entity.*;
 import com.myproject.reservationsystem.security.CustomUserDetails;
 import com.myproject.reservationsystem.service.ReservationSystemService;
 import com.myproject.reservationsystem.service.UserService;
+import com.myproject.reservationsystem.util.TableClusterFinder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,10 +12,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Controller
 @RequestMapping("/user")
@@ -41,7 +40,6 @@ public class UserController {
         reservation.setCourse(new Course());
         model.addAttribute("reservation", reservation);
 
-        // TODO: Maybe I need to create User object here?
         List<Course> courses = reservationSystemService.findAllCourses();
         model.addAttribute("courses", courses);
 
@@ -50,12 +48,29 @@ public class UserController {
 
     @PostMapping("/reservation")
     public String processReservationForm(@ModelAttribute("reservation") Reservation reservation) {
+        // Retrieve currently logging user info
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+            int userId = userDetails.getId();
+            User user = userService.findUserById(userId);
+            reservation.setUser(user);
+        } else {
+            throw new RuntimeException("User not authenticated properly.");
+        }
+
         // Calculate reservation duration
         long durationMinutes = 120;
         LocalDateTime endTime = reservation.getStartTime().plusMinutes(durationMinutes);
         reservation.setEndTime(endTime);
 
+        // Associate corresponding course
+        int courseId = reservation.getCourse().getId();
+        Course course = reservationSystemService.findCourseById(courseId);
+        reservation.setCourse(course);
+
+        // TODO: if numOfPeople > tableMaxCap, then let them reserve separate tables
         List<RestaurantTable> tables = reservationSystemService.findTablesByCapacity(reservation.getNumOfPeople());
+
         if (tables == null) {
             System.out.println("There is no table for " + reservation.getNumOfPeople() + " people");
             // TODO: create correct path to html
@@ -68,17 +83,15 @@ public class UserController {
             if (!availableTimeSlots.isEmpty()) {
                 for (AvailableTimeSlot slot : availableTimeSlots) {
                     if (isBetween(slot.getStartTime(), slot.getEndTime(), reservation.getStartTime(), reservation.getEndTime())) {
-                        reservation.setTable(table);
+                        reservation.addTables(table);
                         if (isTimeSlotBeforeReservationStartTimeTooShort(reservation, slot, durationMinutes) &&
                                 !isTimeSlotAfterReservationStartTimeTooShort(reservation, slot, durationMinutes)) {
                             slot.setStartTime(reservation.getEndTime());
                             reservationSystemService.updateAvailableTimeSlot(slot);
-
                         } else if (!isTimeSlotBeforeReservationStartTimeTooShort(reservation, slot, durationMinutes) &&
                                 isTimeSlotAfterReservationStartTimeTooShort(reservation, slot, durationMinutes)) {
                             slot.setEndTime(reservation.getStartTime());
                             reservationSystemService.updateAvailableTimeSlot(slot);
-
                         } else if (!isTimeSlotBeforeReservationStartTimeTooShort(reservation, slot, durationMinutes) &&
                                 !isTimeSlotAfterReservationStartTimeTooShort(reservation, slot, durationMinutes)) {
                             AvailableTimeSlot newSlot1 = new AvailableTimeSlot(slot.getStartTime(), reservation.getStartTime(), table);
@@ -86,7 +99,6 @@ public class UserController {
                             reservationSystemService.saveAvailableTimeSlot(newSlot1);
                             reservationSystemService.saveAvailableTimeSlot(newSlot2);
                             reservationSystemService.deleteAvailableTimeSlot(slot.getId());
-
                         } else {
                             reservationSystemService.deleteAvailableTimeSlot(slot.getId());
                         }
@@ -95,22 +107,6 @@ public class UserController {
                 }
             }
         }
-
-        // Retrieve currently logging user info
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth.getPrincipal() instanceof CustomUserDetails) {
-            CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-            int userId = userDetails.getId();
-            User user = userService.findUserById(userId);
-            reservation.setUser(user);
-        } else {
-            throw new RuntimeException("User not authenticated properly.");
-        }
-
-        // Associate corresponding course
-        int courseId = reservation.getCourse().getId();
-        Course course = reservationSystemService.findCourseById(courseId);
-        reservation.setCourse(course);
 
         reservationSystemService.saveReservation(reservation);
 

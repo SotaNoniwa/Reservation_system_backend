@@ -70,6 +70,18 @@ public class ReservationSystemDAOImpl implements ReservationSystemDAO {
     }
 
     @Override
+    public int getMaxCapacityOfTable() {
+        List<RestaurantTable> table = entityManager.createQuery(
+                        "from RestaurantTable order by capacity desc",
+                        RestaurantTable.class
+                )
+                .setMaxResults(1)
+                .getResultList();
+
+        return table.getFirst().getCapacity();
+    }
+
+    @Override
     public User findUserById(int id) {
         return entityManager.find(User.class, id);
     }

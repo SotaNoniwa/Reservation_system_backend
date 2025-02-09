@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 // TODO: indexing on column "time"
 @Entity
@@ -34,25 +36,28 @@ public class Reservation {
 
     @ManyToOne(fetch = FetchType.LAZY,
             cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH, CascadeType.PERSIST})
-    @JoinColumn(name = "table_id")
-    private RestaurantTable table;
-
-    @ManyToOne(fetch = FetchType.LAZY,
-            cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH, CascadeType.PERSIST})
     @JoinColumn(name = "course_id")
     private Course course;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "reservation_table",
+            joinColumns = @JoinColumn(name = "reservation_id"),
+            inverseJoinColumns = @JoinColumn(name = "table_id")
+    )
+    private List<RestaurantTable> tables;
 
     public Reservation() {
     }
 
-    public Reservation(LocalDateTime startTime, LocalDateTime endTime, int numOfPeople, String note, User user, RestaurantTable table, Course course) {
+    public Reservation(LocalDateTime startTime, LocalDateTime endTime, int numOfPeople, String note, User user, Course course, List<RestaurantTable> tables) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.numOfPeople = numOfPeople;
         this.note = note;
         this.user = user;
-        this.table = table;
         this.course = course;
+        this.tables = tables;
     }
 
     public int getId() {
@@ -103,14 +108,6 @@ public class Reservation {
         this.user = user;
     }
 
-    public RestaurantTable getTable() {
-        return table;
-    }
-
-    public void setTable(RestaurantTable table) {
-        this.table = table;
-    }
-
     public Course getCourse() {
         return course;
     }
@@ -119,8 +116,32 @@ public class Reservation {
         this.course = course;
     }
 
+    public List<RestaurantTable> getTables() {
+        return tables;
+    }
+
+    public void setTables(List<RestaurantTable> tables) {
+        this.tables = tables;
+    }
+
+    public void addTables(RestaurantTable table) {
+        if (tables == null) {
+            tables = new ArrayList<>();
+        }
+        tables.add(table);
+
+        table.getReservations().add(this);
+    }
+
     @Override
     public String toString() {
+        List<Integer> tableIdList = new ArrayList<>();
+        if (!tables.isEmpty()) {
+            for (RestaurantTable table : tables) {
+                tableIdList.add(table.getId());
+            }
+        }
+
         return "Reservation{" +
                 "id=" + id +
                 ", startTime=" + startTime +
@@ -128,8 +149,8 @@ public class Reservation {
                 ", numOfPeople=" + numOfPeople +
                 ", note='" + note + '\'' +
                 ", userId=" + (user != null ? user.getId() : "null") +
-                ", table=" + (table != null ? table.getId() : "null") +
                 ", course=" + (course != null ? course.getId() : "null") +
+                ", tableIds=" + tableIdList +
                 '}';
     }
 }
