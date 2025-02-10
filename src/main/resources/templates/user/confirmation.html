@@ -22,7 +22,10 @@
     <br>
     <p>User: <span th:text="*{user}"></span></p>
     <br>
-    <p>Table: <span th:text="*{tables}"></span></p>
+    Table:
+    <tr th:each="table: *{tables}">
+        <td th:text="${table.id}"></td>
+    </tr>
     <br>
     <p>Course: <span th:text="*{course.name}"></span></p>
     <br>
