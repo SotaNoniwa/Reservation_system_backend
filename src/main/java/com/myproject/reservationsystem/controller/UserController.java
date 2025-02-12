@@ -4,6 +4,8 @@ import com.myproject.reservationsystem.entity.*;
 import com.myproject.reservationsystem.security.CustomUserDetails;
 import com.myproject.reservationsystem.service.ReservationSystemService;
 import com.myproject.reservationsystem.service.UserService;
+import com.myproject.reservationsystem.util.AvailableTimeSlotUpdateInfo;
+import com.myproject.reservationsystem.util.RemainingTimeSlotPattern;
 import com.myproject.reservationsystem.util.TableClusterFinder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+
+import static com.myproject.reservationsystem.util.RemainingTimeSlotPattern.*;
 
 @Controller
 @RequestMapping("/user")
@@ -81,24 +85,23 @@ public class UserController {
         sortTableClustersByCapacity(tableClusters);
 
         System.out.println("---- Found table clusters ----");
-        for (List<RestaurantTable> cluster: tableClusters) {
+        for (List<RestaurantTable> cluster : tableClusters) {
             StringBuilder sb = new StringBuilder("[ ");
             for (RestaurantTable table : cluster) {
-                sb.append(table.getId() + " ");
+                sb.append(table.getId()).append(" ");
             }
             System.out.println("Table cluster: " + sb + "]");
         }
 
-        // <RestaurantTable, [AvailableTimeSlot, Integer]>
-        Map<RestaurantTable, List<Object>> tableSlotCondition = findAvailableTimeSlots(tableClusters, reservation, durationMinutes);
+        List<AvailableTimeSlotUpdateInfo> slotUpdateInfoList = findAvailableTimeSlots(tableClusters, reservation, durationMinutes);
 
-        if (tableSlotCondition.isEmpty()) {
+        if (slotUpdateInfoList == null) {
             System.out.println("There is no available time slot from " + reservation.getStartTime());
             model.addAttribute("msg", "There is no available time slot from " + reservation.getStartTime());
             return "error";
         }
 
-        updateAvailableTimeSlot(tableSlotCondition, reservation);
+        updateAvailableTimeSlot(slotUpdateInfoList, reservation);
 
         reservationSystemService.saveReservation(reservation);
 
@@ -110,19 +113,16 @@ public class UserController {
                 cluster.stream().mapToInt(RestaurantTable::getCapacity).sum()));
     }
 
-    private Map<RestaurantTable, List<Object>> findAvailableTimeSlots(
+    private List<AvailableTimeSlotUpdateInfo> findAvailableTimeSlots(
             List<List<RestaurantTable>> tableClusters, Reservation reservation, long durationMinutes
     ) {
-        Map<RestaurantTable, List<Object>> tableSlotCondition = new HashMap<>();
+        List<AvailableTimeSlotUpdateInfo> slotUpdateInfoList = new ArrayList<>();
 
-        // Iterate clusters, search available time slot for each table in cluster
         for (List<RestaurantTable> cluster : tableClusters) {
-            int numOfReservableTables = 0; // Keep track of found reservable table
-
             System.out.println("---- searching available time slot ----");
             StringBuilder sb = new StringBuilder("Cluster: [ ");
             for (RestaurantTable table : cluster) {
-                sb.append(table.getId() + " ");
+                sb.append(table.getId()).append(" ");
             }
             sb.append("]");
             System.out.println(sb);
@@ -130,41 +130,49 @@ public class UserController {
             for (RestaurantTable table : cluster) {
                 List<AvailableTimeSlot> availableTimeSlots = table.getAvailableTimeSlots();
 
-                // The table has no available time slot, so discard current cluster from candidates
+                // Current table has no available time slot
                 if (availableTimeSlots.isEmpty()) {
-                    tableSlotCondition.clear();
                     System.out.println("Table " + table.getId() + " has no available time slot...");
-                    break; // Search for next cluster
+                    slotUpdateInfoList.clear();
+                    break; // Skip over current cluster
                 }
 
+                boolean isSlotFound = false;
                 for (AvailableTimeSlot slot : availableTimeSlots) {
+
+                    // Available slot is found for current table
                     if (isBetween(slot.getStartTime(), slot.getEndTime(), reservation.getStartTime(), reservation.getEndTime())) {
-                        int condition = determineCondition(reservation, slot, durationMinutes);
-                        tableSlotCondition.put(table, Arrays.asList(slot, condition));
-                        numOfReservableTables++;
+                        isSlotFound = true;
+                        RemainingTimeSlotPattern remainingSlotPattern = determineRemainingSlotPattern(reservation, slot, durationMinutes);
+                        slotUpdateInfoList.add(new AvailableTimeSlotUpdateInfo(table, slot, remainingSlotPattern));
                         System.out.println("Table " + table.getId() + " is reservable at " + slot.getStartTime());
-                        // Available slot is found, search for available slot for next table in the same cluster
-                        break;
+                        break; // Skip over current table
                     }
                 }
 
-                // All table in the cluster are reservable at customer's reservation time
-                if (numOfReservableTables == cluster.size()) {
-                    return tableSlotCondition;
+                // All tables in current cluster are reservable at reservation time
+                if (slotUpdateInfoList.size() == cluster.size()) {
+                    return slotUpdateInfoList;
+                }
+
+                // Iterate all slots in a table, but none of them doesn't match with reservation time
+                if (!isSlotFound) {
+                    System.out.println("slot is not found for table " + table.getId());
+                    break; // Skip over current cluster
                 }
             }
         }
-        return tableSlotCondition;
+        return null;
     }
 
-    private int determineCondition(Reservation reservation, AvailableTimeSlot slot, long durationMinutes) {
+    private RemainingTimeSlotPattern determineRemainingSlotPattern(Reservation reservation, AvailableTimeSlot slot, long durationMinutes) {
         boolean beforeTooShort = isTimeSlotBeforeReservationStartTimeTooShort(reservation, slot, durationMinutes);
         boolean afterTooShort = isTimeSlotAfterReservationStartTimeTooShort(reservation, slot, durationMinutes);
 
-        if (beforeTooShort && !afterTooShort) return 1;
-        if (!beforeTooShort && afterTooShort) return 2;
-        if (!beforeTooShort && !afterTooShort) return 3;
-        return 4;
+        if (beforeTooShort && !afterTooShort) return AFTER_ONLY;
+        if (!beforeTooShort && afterTooShort) return BEFORE_ONLY;
+        if (!beforeTooShort && !afterTooShort) return SPLIT;
+        return NONE;
     }
 
     private boolean isBetween(LocalDateTime startRange, LocalDateTime endRange, LocalDateTime startTime, LocalDateTime endTime) {
@@ -186,34 +194,34 @@ public class UserController {
         return reservation.getEndTime().plusMinutes(durationMinutes).isAfter(slot.getEndTime());
     }
 
-    private void updateAvailableTimeSlot(Map<RestaurantTable, List<Object>> tableSlotCondition, Reservation reservation) {
-        for (Map.Entry<RestaurantTable, List<Object>> entry : tableSlotCondition.entrySet()) {
-            RestaurantTable table = entry.getKey();
-            AvailableTimeSlot slot = (AvailableTimeSlot) entry.getValue().get(0);
-            int condition = (int) entry.getValue().get(1);
+    private void updateAvailableTimeSlot(List<AvailableTimeSlotUpdateInfo> slotUpdateInfoList, Reservation reservation) {
+        for (AvailableTimeSlotUpdateInfo slotUpdateInfo : slotUpdateInfoList) {
+            RestaurantTable table = slotUpdateInfo.table();
+            AvailableTimeSlot slot = slotUpdateInfo.slot();
+            RemainingTimeSlotPattern remainingSlotPattern = slotUpdateInfo.remainingSlotPattern();
 
             reservation.addTables(table);
 
-            switch (condition) {
-                case 1 -> {
+            switch (remainingSlotPattern) {
+                case AFTER_ONLY -> {
                     slot.setStartTime(reservation.getEndTime());
                     reservationSystemService.updateAvailableTimeSlot(slot);
                 }
-                case 2 -> {
+                case BEFORE_ONLY -> {
                     slot.setEndTime(reservation.getStartTime());
                     reservationSystemService.updateAvailableTimeSlot(slot);
                 }
-                case 3 -> {
+                case SPLIT -> {
                     AvailableTimeSlot newSlot1 = new AvailableTimeSlot(slot.getStartTime(), reservation.getStartTime(), table);
                     AvailableTimeSlot newSlot2 = new AvailableTimeSlot(reservation.getEndTime(), slot.getEndTime(), table);
                     reservationSystemService.saveAvailableTimeSlot(newSlot1);
                     reservationSystemService.saveAvailableTimeSlot(newSlot2);
                     reservationSystemService.deleteAvailableTimeSlot(slot.getId());
                 }
-                case 4 -> {
+                case NONE -> {
                     reservationSystemService.deleteAvailableTimeSlot(slot.getId());
                 }
-                default -> System.out.println("Not proper condition is set");
+                default -> System.out.println("Not proper updateMethod is set");
             }
         }
     }
