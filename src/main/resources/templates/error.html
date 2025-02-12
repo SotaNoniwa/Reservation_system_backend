@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Home</title>
+    <title>Error</title>
 </head>
 <body>
 
-<h3>Home Page</h3>
+<h3>Error</h3>
 
-<a th:href="@{/admin}">Admin Panel</a>
+<p th:text="${msg}"></p>
 
-<br><br>
-
-<a th:href="@{/user}">User Panel</a>
+<a th:href="@{/}">Back to Home page</a>
 
 </body>
 </html>
