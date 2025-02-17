@@ -221,7 +221,7 @@ public class UserController {
                 case NONE -> {
                     reservationSystemService.deleteAvailableTimeSlot(slot.getId());
                 }
-                default -> System.out.println("Not proper updateMethod is set");
+                default -> System.out.println("Not proper RemainingTimeSlotPattern is set");
             }
         }
     }

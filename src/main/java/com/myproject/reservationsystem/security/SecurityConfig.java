@@ -33,17 +33,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(configurer -> configurer
-                .requestMatchers(HttpMethod.GET, "/").hasRole("USER")
-                .requestMatchers(HttpMethod.GET, "/").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/user").hasRole("USER")
-                .requestMatchers(HttpMethod.GET, "/user").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/user/**").hasRole("USER")
-                .requestMatchers(HttpMethod.POST, "/user/**").hasRole("USER")
-                .requestMatchers(HttpMethod.GET, "/user/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/user/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/admin").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/admin/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/admin/**").hasRole("ADMIN"));
+                .requestMatchers("/", "/user").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/**").permitAll());
 
         http.httpBasic(Customizer.withDefaults());
         http.csrf(csrf -> csrf.disable());
