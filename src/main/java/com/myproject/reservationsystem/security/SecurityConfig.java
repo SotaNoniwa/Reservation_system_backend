@@ -33,10 +33,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(configurer -> configurer
-                .requestMatchers("/", "/user").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/**").permitAll());
+//                .requestMatchers("/", "/user").hasAnyRole("USER", "ADMIN")
+//                .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+//                .requestMatchers("/admin/**").hasRole("ADMIN")
+//                .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/", "/**").permitAll() // expose all uri for developing purpose
+        );
 
         http.httpBasic(Customizer.withDefaults());
         http.csrf(csrf -> csrf.disable());
