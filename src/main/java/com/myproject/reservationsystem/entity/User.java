@@ -42,21 +42,13 @@ public class User {
     public User() {
     }
 
-    public User(String username, String email, String phone, String password, boolean enabled) {
+    public User(String username, String email, String phone, String password, boolean enabled, Role role) {
         this.username = username;
         this.email = email;
         this.phone = phone;
         this.password = password;
         this.enabled = enabled;
-    }
-
-    public User(String username, String email, String phone, String password, boolean enabled, Collection<Role> roles) {
-        this.username = username;
-        this.email = email;
-        this.phone = phone;
-        this.password = password;
-        this.enabled = enabled;
-        this.roles = roles;
+        addRole(role);
     }
 
     public int getId() {
@@ -111,20 +103,19 @@ public class User {
         return roles;
     }
 
-    public void setRoles(Collection<Role> roles) {
-        this.roles = roles;
+    public void addRole(Role role) {
+        if (roles == null) {
+            roles = new ArrayList<>();
+        }
+        roles.add(role);
     }
 
     public List<Reservation> getReservations() {
         return reservations;
     }
 
-    public void setReservations(List<Reservation> reservations) {
-        this.reservations = reservations;
-    }
-
     public void addReservation(Reservation reservation) {
-        if (reservations.isEmpty()) {
+        if (reservations == null) {
             reservations = new ArrayList<>();
         }
         reservations.add(reservation);
@@ -133,13 +124,17 @@ public class User {
     @Override
     public String toString() {
         List<Integer> reservationIdList = new ArrayList<>();
-        for (Reservation reservation : reservations) {
-            reservationIdList.add(reservation.getId());
+        if (reservations != null) {
+            for (Reservation reservation : reservations) {
+                reservationIdList.add(reservation.getId());
+            }
         }
 
         List<Integer> roleIdList = new ArrayList<>();
-        for (Role role : roles) {
-            roleIdList.add(role.getId());
+        if (roles != null) {
+            for (Role role : roles) {
+                roleIdList.add(role.getId());
+            }
         }
 
         return "User{" +

@@ -3,12 +3,15 @@ package com.myproject.reservationsystem.controller;
 import com.myproject.reservationsystem.dto.CourseDTO;
 import com.myproject.reservationsystem.dto.ReservationDTO;
 import com.myproject.reservationsystem.entity.*;
+import com.myproject.reservationsystem.security.CustomUserDetails;
 import com.myproject.reservationsystem.service.ReservationSystemService;
 import com.myproject.reservationsystem.service.UserService;
 import com.myproject.reservationsystem.util.AvailableTimeSlotUpdateInfo;
 import com.myproject.reservationsystem.util.RemainingTimeSlotPattern;
 import com.myproject.reservationsystem.util.TableClusterFinder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -27,7 +30,6 @@ public class UserRestController {
 
     private ReservationSystemService reservationSystemService;
 
-    // TODO: DELETE
     private UserService userService;
 
     @Autowired
@@ -47,24 +49,22 @@ public class UserRestController {
     @PostMapping("/reservation")
     public Optional<Integer> processReservationForm(@RequestBody ReservationDTO reservationDTO) {
         // Retrieve currently logging user info
+//        User user = null;
 //        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 //        if (auth.getPrincipal() instanceof CustomUserDetails userDetails) {
 //            int userId = userDetails.getId();
-//            User user = userService.findUserById(userId);
-//            reservation.setUser(user);
-//        } else {
-//            throw new RuntimeException("User not authenticated properly.");
+//            user = userService.findUserById(userId);
 //        }
 
-        // TODO: config user automatically
-        User user = userService.findUserById(1);
-
         // Extract data from parameter
+        int userId = reservationDTO.getUserId();
         int courseId = reservationDTO.getCourseId();
         LocalDateTime reservedDateTime = reservationDTO.getDateTime(); // yyyy-mm-ddThh:mm:ss
         long durationMinutes = reservationDTO.getDurationMinutes();
         int numOfCustomers = reservationDTO.getNumOfCustomers();
         String note = reservationDTO.getNote();
+
+        User user = userService.findUserById(userId);
 
         // Calculate end time of reservation
         LocalDateTime endDateTime = reservedDateTime.plusMinutes(durationMinutes);

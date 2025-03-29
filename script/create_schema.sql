@@ -10,7 +10,7 @@ use reservation_system;
 create table `user` (
 	id int not null auto_increment,
     username varchar(50) not null,
-    email varchar(120) not null,
+    email varchar(120) not null unique,
     phone varchar(30) not null,
     `password` char(80) not null,
     enabled tinyint not null,
@@ -18,11 +18,12 @@ create table `user` (
     primary key(id)
 ) engine=InnoDB default charset=utf8mb4;
 
-INSERT INTO `user` (`username`, email, phone, `password`,`enabled`)
-VALUES 
-('john', 'john@mail.com', 'xxx-xxxx-xxxx', '$2a$04$eFytJDGtjbThXa80FyOOBuFdK2IwjyWefYkMpiBEFlpBwDH.5PM0K',1),
-('mary', 'mary@mail.com', 'xxx-xxxx-xxxx', '$2a$04$eFytJDGtjbThXa80FyOOBuFdK2IwjyWefYkMpiBEFlpBwDH.5PM0K',1),
-('susan','susan@mail.com', 'xxx-xxxx-xxxx', '$2a$04$eFytJDGtjbThXa80FyOOBuFdK2IwjyWefYkMpiBEFlpBwDH.5PM0K',1);
+
+-- INSERT INTO `user` (`username`, email, phone, `password`,`enabled`)
+-- VALUES 
+-- ('john', 'john@mail.com', 'xxx-xxxx-xxxx', '$2a$04$eFytJDGtjbThXa80FyOOBuFdK2IwjyWefYkMpiBEFlpBwDH.5PM0K',1),
+-- ('mary', 'mary@mail.com', 'xxx-xxxx-xxxy', '$2a$04$eFytJDGtjbThXa80FyOOBuFdK2IwjyWefYkMpiBEFlpBwDH.5PM0K',1),
+-- ('susan','susan@mail.com', 'xxx-xxxx-xxxz', '$2a$04$eFytJDGtjbThXa80FyOOBuFdK2IwjyWefYkMpiBEFlpBwDH.5PM0K',1);
 
 CREATE TABLE `role` (
 	id int not null auto_increment,
@@ -58,13 +59,13 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- Dumping data for table `users_roles`
 --
 
-INSERT INTO user_role (user_id,role_id)
-VALUES 
-(1, 1),
-(2, 1),
-(2, 2),
-(3, 1),
-(3, 2);
+-- INSERT INTO user_role (user_id,role_id)
+-- VALUES 
+-- (1, 1),
+-- (2, 1),
+-- (2, 2),
+-- (3, 1),
+-- (3, 2);
 
 create table `table` (
 	id int not null auto_increment,
