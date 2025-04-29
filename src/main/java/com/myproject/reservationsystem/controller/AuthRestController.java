@@ -7,21 +7,16 @@ import com.myproject.reservationsystem.entity.User;
 import com.myproject.reservationsystem.security.JwtService;
 import com.myproject.reservationsystem.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Optional;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-public class AuthenticationRestController {
+@RequestMapping("/auth")
+public class AuthRestController {
 
     private UserService userService;
 
@@ -32,7 +27,7 @@ public class AuthenticationRestController {
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    public AuthenticationRestController(UserService userService, BCryptPasswordEncoder bCryptPasswordEncoder, JwtService jwtService, AuthenticationManager authenticationManager) {
+    public AuthRestController(UserService userService, BCryptPasswordEncoder bCryptPasswordEncoder, JwtService jwtService, AuthenticationManager authenticationManager) {
         this.userService = userService;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.jwtService = jwtService;
@@ -40,7 +35,7 @@ public class AuthenticationRestController {
     }
 
     @PostMapping("/register")
-    public int registerUser(@RequestBody UserRegisterDTO userRegisterDTO) {
+    public int register(@RequestBody UserRegisterDTO userRegisterDTO) {
         Role role = userService.findRoleByName("ROLE_USER");
 
         User user = new User(
@@ -55,8 +50,8 @@ public class AuthenticationRestController {
         return userService.saveUser(user);
     }
 
-    @PostMapping("/generateToken")
-    public String authenticateAndGetToken(@RequestBody UserLoginDTO userLoginDTO) {
+    @PostMapping("/login")
+    public String login(@RequestBody UserLoginDTO userLoginDTO) {
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userLoginDTO.getEmail(), userLoginDTO.getPassword()));
 
         User user = userService.findUserByEmail(userLoginDTO.getEmail());
@@ -70,10 +65,4 @@ public class AuthenticationRestController {
             throw new UsernameNotFoundException("Invalid user request");
         }
     }
-
-    @GetMapping("/user")
-    public String helloUser() {
-        return "Hello User";
-    }
-
 }

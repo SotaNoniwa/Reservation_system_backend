@@ -6,7 +6,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -18,15 +18,16 @@ import java.util.function.Function;
 @Component
 public class JwtService {
 
-    // Replace this with a secure key in a real application, ideally fetched from environment variables
-    private static final String SECRET = "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437";
-private static final long EXPIRATION_TIME=1000*60;
+    @Value("${spring.datasource.secret}")
+    private String SECRET;
+
+    private static final long EXPIRATION_TIME = 1000 * 60 * 60; // 1 hour
 
     // Generate token with given username
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("username", user.getUsername());
         claims.put("roles", user.getRoles());
-        System.out.println("generateToken: " + claims);
         return createToken(claims, user.getEmail());
     }
 
@@ -36,10 +37,9 @@ private static final long EXPIRATION_TIME=1000*60;
                 .setClaims(claims)
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() +EXPIRATION_TIME)) // Token valid for 1 min
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
-        System.out.println("createToken: " + jwt);
         return jwt;
     }
 
@@ -49,7 +49,7 @@ private static final long EXPIRATION_TIME=1000*60;
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // Extract the username from the token
+    // Extract the email from the token
     public String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -62,7 +62,6 @@ private static final long EXPIRATION_TIME=1000*60;
     // Extract a claim from the token
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
-        System.out.println("extractClaim: " + claims);
         return claimsResolver.apply(claims);
     }
 
@@ -73,7 +72,6 @@ private static final long EXPIRATION_TIME=1000*60;
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        System.out.println("extractAllClaims: " + jwt);
         return jwt;
     }
 
@@ -85,8 +83,6 @@ private static final long EXPIRATION_TIME=1000*60;
     // Validate the token against user details and expiration
     public Boolean validateToken(String token, CustomUserDetails user) {
         final String email = extractEmail(token);
-        System.out.println("email in token: " + email);
-        System.out.println("email in user : " + user.getEmail());
         return (email.equals(user.getEmail()) && !isTokenExpired(token));
     }
 }

@@ -1,12 +1,10 @@
 package com.myproject.reservationsystem.security;
 
 import com.myproject.reservationsystem.service.UserService;
-import com.myproject.reservationsystem.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -16,14 +14,9 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.provisioning.JdbcUserDetailsManager;
-import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import javax.sql.DataSource;
 
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -35,7 +28,7 @@ public class SecurityConfig {
     private UserService userService;
 
     @Autowired
-    public SecurityConfig(JwtAuthFilter authFilter,@Lazy UserService userService) {
+    public SecurityConfig(JwtAuthFilter authFilter, @Lazy UserService userService) {
         this.authFilter = authFilter;
         this.userService = userService;
     }
@@ -61,9 +54,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(configurer -> configurer
-                                .requestMatchers("/register").permitAll()
-                                .requestMatchers("/generateToken").permitAll()
-                                .anyRequest().authenticated()
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/api/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())

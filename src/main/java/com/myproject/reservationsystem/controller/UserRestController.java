@@ -3,15 +3,12 @@ package com.myproject.reservationsystem.controller;
 import com.myproject.reservationsystem.dto.CourseDTO;
 import com.myproject.reservationsystem.dto.ReservationDTO;
 import com.myproject.reservationsystem.entity.*;
-import com.myproject.reservationsystem.security.CustomUserDetails;
 import com.myproject.reservationsystem.service.ReservationSystemService;
 import com.myproject.reservationsystem.service.UserService;
 import com.myproject.reservationsystem.util.AvailableTimeSlotUpdateInfo;
 import com.myproject.reservationsystem.util.RemainingTimeSlotPattern;
 import com.myproject.reservationsystem.util.TableClusterFinder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -39,7 +36,7 @@ public class UserRestController {
     }
 
     @GetMapping("/courses")
-    public List<CourseDTO> getCourses() {
+    public List<CourseDTO> fetchCourses() {
         List<Course> courses = reservationSystemService.findAllCourses();
         return courses.stream()
                 .map(course -> new CourseDTO(course.getId(), course.getName(), course.getPrice()))
@@ -116,7 +113,6 @@ public class UserRestController {
 
         return Optional.of(reservation.getId());
     }
-
 
     private void sortTableClustersByCapacity(List<List<RestaurantTable>> tableClusters) {
         tableClusters.sort(Comparator.comparingInt(cluster ->
